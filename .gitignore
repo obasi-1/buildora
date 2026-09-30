@@ -1,0 +1,24 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local environment secrets
+.env
+.env.*
+!.env.example
+
+# Local databases and uploaded files
+*.sqlite3
+*.sqlite3-*
+backend/media/
+backend/staticfiles/
+
+# Frontend dependencies and generated builds
+node_modules/
+dist/
+
+# Logs
+*.log

@@ -1,0 +1,114 @@
+:root {
+  font-family: "Segoe UI", Inter, system-ui, sans-serif;
+  color: #edf3fc;
+  background: #0b1120;
+
+  --bg: #0b1120;
+  --surface: #131e31;
+  --surface-raised: #192740;
+  --text: #edf3fc;
+  --muted: #acbad0;
+  --border: #30415b;
+  --accent: #65e5c1;
+  --accent-hover: #99f4d9;
+  --blue: #8abaff;
+  --danger: #ffb9bc;
+  --radius: 20px;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 24px;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      ellipse at 90% 0%,
+      rgb(50 102 184 / 15%),
+      transparent 45%
+    ),
+    var(--bg);
+  line-height: 1.6;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 5px;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+textarea,
+select {
+  max-width: 100%;
+}
+
+button {
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+:where(a, button, input, textarea, select):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+
+::selection {
+  color: #071c18;
+  background: var(--accent);
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
