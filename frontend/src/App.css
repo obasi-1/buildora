@@ -1470,3 +1470,69 @@ footer {
     transition: none;
   }
 }
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  background: var(--surface-raised);
+  border-color: var(--accent);
+}
+
+.theme-toggle:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.theme-toggle span {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.footer-bottom nav {
+  align-items: center;
+}
+
+/* Keep button text readable on the darker light-theme accent. */
+html[data-theme="light"] .primary-link {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+html[data-theme="light"] .primary-link:hover {
+  background: var(--accent-hover);
+}
+
+/* Give the signup banner a light background. */
+html[data-theme="light"] .home-join {
+  background: linear-gradient(135deg, #e4f3eb, #eaf0fb);
+  border-color: #bbd4c8;
+}
+
+/* Preserve the dark code example in both themes. */
+html[data-theme="light"] .code-preview {
+  color: #edf3fb;
+}
+
+html[data-theme="light"] .code-preview-header,
+html[data-theme="light"] .code-preview-footer {
+  color: #b0bfd2;
+}
+
+html[data-theme="light"] .code-preview-output {
+  color: #d8f7e8;
+}

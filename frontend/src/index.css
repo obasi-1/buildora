@@ -112,3 +112,39 @@ svg {
     scroll-behavior: auto;
   }
 }
+
+:root[data-theme="dark"] {
+  --background: #0b1220;
+  --surface: #111d30;
+  --surface-raised: #19283e;
+  --text: #edf3fb;
+  --muted: #b0bfd2;
+  --border: #34465e;
+  --accent: #73e2b5;
+  --accent-hover: #9aecc9;
+  --blue: #8abaff;
+  --danger: #ffaaa3;
+}
+
+:root[data-theme="light"] {
+  --background: #f5f7fb;
+  --surface: #ffffff;
+  --surface-raised: #eaf0f7;
+  --text: #172638;
+  --muted: #526176;
+  --border: #ccd6e3;
+  --accent: #146447;
+  --accent-hover: #104e38;
+  --blue: #245dad;
+  --danger: #b42318;
+}
+
+:root[data-theme] {
+  color: var(--text);
+  background: var(--background);
+}
+
+html[data-theme] body {
+  color: var(--text);
+  background: var(--background);
+}

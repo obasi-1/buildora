@@ -15,7 +15,6 @@ export default function App() {
   const [authScreen, setAuthScreen] = useState(null);
   const [showDashboard, setShowDashboard] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-
   const {
     session,
     setSession,
@@ -25,6 +24,32 @@ export default function App() {
     dismissRestore,
     updateUser,
   } = useSession();
+  const [theme, setTheme] = useState(() => {
+  try {
+    const savedTheme = localStorage.getItem("buildora.theme");
+
+    if (savedTheme === "light" || savedTheme === "dark") {
+      return savedTheme;
+    }
+  } catch {
+    // Use the device preference if storage is unavailable.
+  }
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+});
+
+    useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+
+    try {
+      localStorage.setItem("buildora.theme", theme);
+    } catch {
+      // Theme switching still works without browser storage.
+    }
+  }, [theme]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -535,9 +560,23 @@ export default function App() {
     </div>
 
     <nav aria-label="Footer navigation">
-      <a href="#learning-paths">Learning paths</a>
-      <a href="#how-it-works">How it works</a>
-    </nav>
+  <a href="#learning-paths">Learning paths</a>
+  <a href="#how-it-works">How it works</a>
+
+  <button
+    type="button"
+    className="theme-toggle"
+    onClick={() => {
+      setTheme((current) => (current === "dark" ? "light" : "dark"));
+    }}
+    aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+  >
+    <span aria-hidden="true">
+      {theme === "dark" ? "☀" : "☾"}
+    </span>
+    {theme === "dark" ? "Light theme" : "Dark theme"}
+  </button>
+</nav>
 
     <p className="footer-copyright">
       © {new Date().getFullYear()} Buildora.
