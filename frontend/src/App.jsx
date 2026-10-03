@@ -2,27 +2,29 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import LearningPath from "./PathDetails.jsx";
 import Login from "./Login.jsx";
+import Register from "./Register.jsx";
 import Dashboard from "./Dashboard.jsx";
-import useSession from "./sessionHook.js";
 import Profile from "./Profile.jsx";
+import useSession from "./sessionHook.js";
 
 export default function App() {
   const [paths, setPaths] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedSlug, setSelectedSlug] = useState(null);
-  const {
-  session,
-  setSession,
-  restoring,
-  restoreError,
-  retryRestore,
-  dismissRestore,
-  updateUser, 
-} = useSession();
-  const [showLogin, setShowLogin] = useState(false);
+  const [authScreen, setAuthScreen] = useState(null);
   const [showDashboard, setShowDashboard] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+
+  const {
+    session,
+    setSession,
+    restoring,
+    restoreError,
+    retryRestore,
+    dismissRestore,
+    updateUser,
+  } = useSession();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -62,24 +64,56 @@ export default function App() {
     return () => controller.abort();
   }, []);
 
+  function scrollToTop() {
+    window.scrollTo(0, 0);
+  }
+
   function goHome() {
-  setSelectedSlug(null);
-  setShowDashboard(false);
-  setShowLogin(false);
-  setShowProfile(false);
-  window.scrollTo(0, 0);
-}
+    setSelectedSlug(null);
+    setShowDashboard(false);
+    setShowProfile(false);
+    setAuthScreen(null);
+    scrollToTop();
+  }
 
   function openPath(slug) {
     setSelectedSlug(slug);
     setShowDashboard(false);
-    window.scrollTo(0, 0);
+    setShowProfile(false);
+    setAuthScreen(null);
+    scrollToTop();
+  }
+
+  function openDashboard() {
+    setSelectedSlug(null);
+    setShowProfile(false);
+    setAuthScreen(null);
+    setShowDashboard(true);
+    scrollToTop();
+  }
+
+  function openProfile() {
+    setSelectedSlug(null);
+    setShowDashboard(false);
+    setAuthScreen(null);
+    setShowProfile(true);
+    scrollToTop();
   }
 
   function requestLogin() {
     setSession(null);
-    setShowLogin(true);
-    window.scrollTo(0, 0);
+    setAuthScreen("login");
+    scrollToTop();
+  }
+
+  function requestRegistration() {
+    setAuthScreen("register");
+    scrollToTop();
+  }
+
+  function closeAuth() {
+    setAuthScreen(null);
+    scrollToTop();
   }
 
   function logout() {
@@ -87,8 +121,7 @@ export default function App() {
     goHome();
   }
 
-  
-    if (restoring || restoreError) {
+  if (restoring || restoreError) {
     return (
       <div className="site">
         <header className="site-header">
@@ -128,32 +161,41 @@ export default function App() {
     );
   }
 
-  if (showLogin) {
+  if (authScreen === "register") {
+    return (
+      <Register
+        onBack={closeAuth}
+        onLogin={() => {
+          setAuthScreen("login");
+          scrollToTop();
+        }}
+      />
+    );
+  }
+
+  if (authScreen === "login") {
     return (
       <Login
-        onBack={() => {
-          setShowLogin(false);
-          window.scrollTo(0, 0);
-        }}
+        onBack={closeAuth}
         onSuccess={(newSession) => {
           setSession(newSession);
-          setShowLogin(false);
-          window.scrollTo(0, 0);
+          setAuthScreen(null);
+          scrollToTop();
         }}
       />
     );
   }
 
   if (showProfile && session) {
-  return (
-    <Profile
-      key={session.user.id}
-      onBack={goHome}
-      onLogin={requestLogin}
-      onSaved={updateUser}
-    />
-  );
-}
+    return (
+      <Profile
+        key={session.user.id}
+        onBack={goHome}
+        onLogin={requestLogin}
+        onSaved={updateUser}
+      />
+    );
+  }
 
   if (selectedSlug) {
     return (
@@ -180,149 +222,209 @@ export default function App() {
   }
 
   return (
-    <div className="site">
-      <header className="site-header">
+    <div className="site homepage">
+      <header className="site-header home-header">
         <a className="brand" href="/">
           Buildora<span>.</span>
         </a>
 
-        <nav className="header-actions" aria-label="Main navigation">
+        <nav className="home-navigation" aria-label="Main navigation">
           <a className="nav-link" href="#learning-paths">
-            Explore learning paths
+            Learning paths
           </a>
+          <a className="nav-link" href="#how-it-works">
+            How it works
+          </a>
+        </nav>
 
+        <div className="home-account-actions">
           {session ? (
             <>
               <button
                 type="button"
                 className="back-button"
-                onClick={() => {
-                  setShowDashboard(true);
-                  window.scrollTo(0, 0);
-                }}
+                onClick={openDashboard}
               >
                 My dashboard
               </button>
-              <button
-  type="button"
-  className="back-button"
-  onClick={() => {
-    setSelectedSlug(null);
-    setShowDashboard(false);
-    setShowProfile(true);
-    window.scrollTo(0, 0);
-  }}
->
-  My profile
-</button>
-
-              <span>
-                Hi, {session.user.first_name || session.user.username}
-              </span>
 
               <button
                 type="button"
                 className="back-button"
+                onClick={openProfile}
+              >
+                My profile
+              </button>
+
+              <button
+                type="button"
+                className="text-button"
                 onClick={logout}
               >
                 Log out
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              className="back-button"
-              onClick={requestLogin}
-            >
-              Log in
-            </button>
+            <>
+              <button
+                type="button"
+                className="back-button"
+                onClick={requestLogin}
+              >
+                Log in
+              </button>
+
+              <button
+                type="button"
+                className="primary-link header-signup"
+                onClick={requestRegistration}
+              >
+                Create account
+              </button>
+            </>
           )}
-        </nav>
+        </div>
       </header>
 
       <main>
-        <section className="hero hero-showcase">
-  <div className="hero-copy">
-    <p className="eyebrow">LEARN BY CREATING</p>
+        <section className="hero hero-showcase home-hero">
+          <div className="hero-copy">
+            <p className="eyebrow">YOUR LEARNING STARTS HERE</p>
 
-    <h1>
-      Small steps.
-      <br />
-      Real skills.
-      <br />
-      <span>Your next build.</span>
-    </h1>
+            <h1>
+              Learn to code.
+              <br />
+              <span>Build real projects.</span>
+            </h1>
 
-    <p className="hero-description">
-      Discover guided lessons, practise what you learn,
-      and turn your ideas into working projects.
-    </p>
+            <p className="hero-description">
+              Follow simple lessons, practise new skills, and build
+              something of your own. Take it one step at a time.
+            </p>
 
-    <a className="primary-link" href="#learning-paths">
-      Find your starting point →
-    </a>
+            <div className="home-hero-actions">
+              <button
+                type="button"
+                className="primary-link"
+                onClick={session ? openDashboard : requestRegistration}
+              >
+                {session ? "Go to my dashboard →" : "Create account →"}
+              </button>
 
-    <p className="hero-caption">
-      Read a lesson. Try an exercise. Build something yours.
-    </p>
-  </div>
+              <a className="back-button" href="#learning-paths">
+                Explore learning paths
+              </a>
+            </div>
 
-  <figure className="code-preview">
-    <figcaption className="code-preview-header">
-      <span className="code-window-dots" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-      </span>
+            <p className="hero-caption">
+              {session
+                ? `Welcome back, ${
+                    session.user.first_name || session.user.username
+                  }. Keep building your skills.`
+                : "New to coding? Start with your first lesson."}
+            </p>
+          </div>
 
-      <span>introduction.py</span>
-      <span className="code-language">Python</span>
-    </figcaption>
+          <figure className="code-preview">
+            <figcaption className="code-preview-header">
+              <span className="code-window-dots" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+              <span>my_first_project.py</span>
+              <span className="code-language">Python</span>
+            </figcaption>
 
-    <div className="code-preview-body">
-      <p className="code-comment"># Every developer starts somewhere.</p>
+            <div className="code-preview-body">
+              <p className="code-comment">
+                # Big ideas start with small steps.
+              </p>
 
-      <pre>
-        <code>
-          <span className="code-variable">name</span>
-          {" = "}
-          <span className="code-string">"Builder"</span>
-          {"\n"}
-          <span className="code-variable">project</span>
-          {" = "}
-          <span className="code-string">"my first app"</span>
-          {"\n\n"}
-          <span className="code-function">print</span>
-          {"("}
-          <span className="code-string">{'f"Hello, {name}!"'}</span>
-          {")\n"}
-          <span className="code-function">print</span>
-          {"("}
-          <span className="code-string">
-            {'f"I am building {project}."'}
-          </span>
-          {")"}
-        </code>
-      </pre>
-    </div>
+              <pre>
+                <code>
+                  <span className="code-variable">name</span>
+                  {" = "}
+                  <span className="code-string">"Builder"</span>
+                  {"\n\n"}
+                  <span className="code-function">print</span>
+                  {"("}
+                  <span className="code-string">
+                    {'f"Hello, {name}!"'}
+                  </span>
+                  {")\n"}
+                  <span className="code-function">print</span>
+                  {"("}
+                  <span className="code-string">
+                    {'"This is my first step."'}
+                  </span>
+                  {")"}
+                </code>
+              </pre>
+            </div>
 
-    <div className="code-preview-output">
-      <p className="output-label">EXAMPLE OUTPUT</p>
-      <pre>{"Hello, Builder!\nI am building my first app."}</pre>
-    </div>
+            <div className="code-preview-output">
+              <p className="output-label">WHAT YOUR PROGRAM DISPLAYS</p>
+              <pre>{"Hello, Builder!\nThis is my first step."}</pre>
+            </div>
 
-    <p className="code-preview-footer">
-      From your first line to your first project.
-    </p>
-  </figure>
-</section>
+            <p className="code-preview-footer">
+              Learn it. Try it. Make it yours.
+            </p>
+          </figure>
+        </section>
 
-        <section id="learning-paths" className="catalogue">
-          <p className="eyebrow">YOUR LEARNING JOURNEY</p>
-          <h2>Choose a learning path</h2>
+        <section
+          id="how-it-works"
+          className="home-steps-section"
+          aria-labelledby="how-title"
+        >
+          <p className="eyebrow">GETTING STARTED</p>
+          <h2 id="how-title">Your next skill starts with a small step.</h2>
+
+          <div className="home-steps">
+            <article className="home-step">
+              <span className="home-step-number" aria-hidden="true">
+                01
+              </span>
+              <h3>Create your account</h3>
+              <p>
+                Set up your profile so you can save your learning progress.
+              </p>
+            </article>
+
+            <article className="home-step">
+              <span className="home-step-number" aria-hidden="true">
+                02
+              </span>
+              <h3>Choose a learning path</h3>
+              <p>
+                Follow the lessons and practise with simple exercises.
+              </p>
+            </article>
+
+            <article className="home-step">
+              <span className="home-step-number" aria-hidden="true">
+                03
+              </span>
+              <h3>Build your first project</h3>
+              <p>
+                Put your skills to work and submit a link to what you build.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section
+          id="learning-paths"
+          className="catalogue"
+          aria-labelledby="catalogue-title"
+        >
+          <p className="eyebrow">EXPLORE AND LEARN</p>
+          <h2 id="catalogue-title">Find your starting point.</h2>
 
           <p className="section-description">
-            Build your foundation, one lesson at a time.
+            Choose a path and learn one lesson at a time.
           </p>
 
           {loading && <p role="status">Loading learning paths…</p>}
@@ -330,7 +432,6 @@ export default function App() {
           {error && (
             <div className="error-box" role="alert">
               <p>We couldn’t load the learning paths. {error}</p>
-
               <button
                 type="button"
                 onClick={() => window.location.reload()}
@@ -364,9 +465,38 @@ export default function App() {
             </div>
           )}
         </section>
+
+        {!session && (
+          <section className="home-join" aria-labelledby="join-title">
+            <div>
+              <h2 id="join-title">Ready to build something?</h2>
+              <p>Create your account and take your first step today.</p>
+            </div>
+
+            <button
+              type="button"
+              className="primary-link"
+              onClick={requestRegistration}
+            >
+              Create account →
+            </button>
+          </section>
+        )}
       </main>
 
-      <footer>Buildora · Learn. Build. Become.</footer>
+      <footer className="home-footer">
+        <div>
+          <a className="brand" href="/">
+            Buildora<span>.</span>
+          </a>
+          <p>Learn. Build. Become.</p>
+        </div>
+
+        <nav aria-label="Footer navigation">
+          <a href="#learning-paths">Learning paths</a>
+          <a href="#how-it-works">How it works</a>
+        </nav>
+      </footer>
     </div>
   );
 }
