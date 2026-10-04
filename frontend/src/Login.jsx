@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Register from "./Register.jsx";
+import ForgotPassword from "./ForgotPassword.jsx";
 
 export default function Login({ onSuccess, onBack }) {
   const [username, setUsername] = useState("");
@@ -7,7 +8,7 @@ export default function Login({ onSuccess, onBack }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
-
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   function switchScreen(register) {
     setError("");
     setPassword("");
@@ -72,6 +73,17 @@ export default function Login({ onSuccess, onBack }) {
     }
   }
 
+  if (showForgotPassword) {
+  return (
+    <ForgotPassword
+      onBack={() => {
+        setShowForgotPassword(false);
+        window.scrollTo(0, 0);
+      }}
+    />
+  );
+}
+
   if (showRegister) {
     return (
       <Register
@@ -129,6 +141,20 @@ export default function Login({ onSuccess, onBack }) {
             required
             disabled={loading}
           />
+
+          <button
+  type="button"
+  className="text-button"
+  disabled={loading}
+  onClick={() => {
+    setError("");
+    setPassword("");
+    setShowForgotPassword(true);
+    window.scrollTo(0, 0);
+  }}
+>
+  Forgot password?
+</button>
 
           {error && (
             <p className="error-box" role="alert">

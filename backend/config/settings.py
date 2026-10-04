@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "learning.apps.LearningConfig",
     "progress.apps.ProgressConfig",
     "projects",
+    "anymail",
 ]
 
 MIDDLEWARE = [
@@ -186,3 +187,27 @@ LOGGING = {
         },
     },
 }
+
+# Password reset links expire after 30 minutes.
+PASSWORD_RESET_TIMEOUT = 30 * 60
+
+# Frontend address used in password reset emails.
+FRONTEND_URL = os.environ.get(
+    "FRONTEND_URL",
+    "http://localhost:5173"
+    if DEBUG
+    else "https://buildora-rose-two.vercel.app",
+).rstrip("/")
+
+# Reject authentication with tokens issued before a password change.
+SIMPLE_JWT = {
+    "CHECK_REVOKE_TOKEN": True,
+}
+
+EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
+
+ANYMAIL = {
+    "BREVO_API_KEY": os.environ["BREVO_API_KEY"],
+}
+
+DEFAULT_FROM_EMAIL = "Buildora <obasonz61@gmail.com>"

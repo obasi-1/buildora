@@ -6,6 +6,23 @@ import Register from "./Register.jsx";
 import Dashboard from "./Dashboard.jsx";
 import Profile from "./Profile.jsx";
 import useSession from "./sessionHook.js";
+import ResetPassword from "./ResetPassword.jsx";
+
+function readResetLink() {
+  const hash = window.location.hash;
+  const [screen, query = ""] = hash.split("?");
+
+  if (screen !== "#reset-password") {
+    return null;
+  }
+
+  const params = new URLSearchParams(query);
+
+  return {
+    uid: params.get("uid") || "",
+    token: params.get("token") || "",
+  };
+}
 
 export default function App() {
   const [paths, setPaths] = useState([]);
@@ -15,6 +32,7 @@ export default function App() {
   const [authScreen, setAuthScreen] = useState(null);
   const [showDashboard, setShowDashboard] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [resetLink, setResetLink] = useState(readResetLink);
   const {
     session,
     setSession,
@@ -40,7 +58,7 @@ export default function App() {
     : "light";
 });
 
-    useEffect(() => {
+      useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
 
@@ -52,9 +70,24 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    function handleHashChange() {
+      setResetLink(readResetLink());
+    }
+
+    window.addEventListener("hashchange", handleHashChange);
+
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+    };
+  }, []);
+
+  useEffect(() => {
     const controller = new AbortController();
 
     async function loadPaths() {
+      setLoading(true);
+      setError("");
+
       try {
         const response = await fetch("/api/learning/paths/", {
           signal: controller.signal,
@@ -88,7 +121,7 @@ export default function App() {
 
     return () => controller.abort();
   }, []);
-
+  
   function scrollToTop() {
     window.scrollTo(0, 0);
   }
@@ -145,6 +178,31 @@ export default function App() {
     setSession(null);
     goHome();
   }
+
+  if (resetLink) {
+  return (
+    <ResetPassword
+      key={`${resetLink.uid}-${resetLink.token}`}
+      uid={resetLink.uid}
+      token={resetLink.token}
+      onLogin={() => {
+        window.history.replaceState(
+          null,
+          "",
+          window.location.pathname + window.location.search
+        );
+
+        setResetLink(null);
+        setSession(null);
+        setSelectedSlug(null);
+        setShowDashboard(false);
+        setShowProfile(false);
+        setAuthScreen("login");
+        window.scrollTo(0, 0);
+      }}
+    />
+  );
+}
 
   if (restoring || restoreError) {
     return (
