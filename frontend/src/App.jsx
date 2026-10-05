@@ -30,7 +30,9 @@ export default function App() {
   const [error, setError] = useState("");
   const [selectedSlug, setSelectedSlug] = useState(null);
   const [authScreen, setAuthScreen] = useState(null);
-  const [showDashboard, setShowDashboard] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(
+  () => window.location.hash === "#dashboard"
+);
   const [showProfile, setShowProfile] = useState(false);
   const [resetLink, setResetLink] = useState(readResetLink);
   const {
@@ -70,16 +72,26 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    function handleHashChange() {
-      setResetLink(readResetLink());
+  function handleHashChange() {
+    setResetLink(readResetLink());
+
+    if (window.location.hash === "#dashboard") {
+      setSelectedSlug(null);
+      setShowProfile(false);
+      setAuthScreen(null);
+      setShowDashboard(true);
+      window.scrollTo(0, 0);
+    } else {
+      setShowDashboard(false);
     }
+  }
 
-    window.addEventListener("hashchange", handleHashChange);
+  window.addEventListener("hashchange", handleHashChange);
 
-    return () => {
-      window.removeEventListener("hashchange", handleHashChange);
-    };
-  }, []);
+  return () => {
+    window.removeEventListener("hashchange", handleHashChange);
+  };
+}, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -126,7 +138,18 @@ export default function App() {
     window.scrollTo(0, 0);
   }
 
+  function clearDashboardLink() {
+  if (window.location.hash === "#dashboard") {
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + window.location.search
+    );
+  }
+}
+
   function goHome() {
+    clearDashboardLink();
     setSelectedSlug(null);
     setShowDashboard(false);
     setShowProfile(false);
@@ -135,6 +158,7 @@ export default function App() {
   }
 
   function openPath(slug) {
+    clearDashboardLink();
     setSelectedSlug(slug);
     setShowDashboard(false);
     setShowProfile(false);
@@ -151,6 +175,7 @@ export default function App() {
   }
 
   function openProfile() {
+    clearDashboardLink();
     setSelectedSlug(null);
     setShowDashboard(false);
     setAuthScreen(null);
@@ -256,18 +281,18 @@ export default function App() {
     );
   }
 
-  if (authScreen === "login") {
-    return (
-      <Login
-        onBack={closeAuth}
-        onSuccess={(newSession) => {
-          setSession(newSession);
-          setAuthScreen(null);
-          scrollToTop();
-        }}
-      />
-    );
-  }
+  if (authScreen === "login" || (showDashboard && !session)) {
+  return (
+    <Login
+      onBack={showDashboard ? goHome : closeAuth}
+      onSuccess={(newSession) => {
+        setSession(newSession);
+        setAuthScreen(null);
+        scrollToTop();
+      }}
+    />
+  );
+}
 
   if (showProfile && session) {
     return (

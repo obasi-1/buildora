@@ -1,4 +1,5 @@
 import logging
+from django.template.loader import render_to_string
 from urllib.parse import urlencode
 
 from django.conf import settings
@@ -34,6 +35,65 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+
+        def send_welcome_email():
+            try:
+                name = user.first_name.strip() or user.get_username()
+                frontend_url = settings.FRONTEND_URL.rstrip("/")
+                dashboard_url = f"{frontend_url}/#dashboard"
+
+                logo_url = (
+                    "https://buildora-rose-two.vercel.app"
+                    "/buildora-logo.png"
+                )
+
+                message = (
+                    f"Hello {name},\n\n"
+                    "Welcome to Buildora!\n\n"
+                    "Your account is ready. We're glad you're here.\n\n"
+                    "Buildora helps you learn coding through guided "
+                    "lessons, practical exercises, and real projects.\n\n"
+                    "Here's how to get started:\n"
+                    "1. Log in to your account.\n"
+                    "2. Choose a learning path and enrol.\n"
+                    "3. Try your first lesson and exercise.\n\n"
+                    f"Go to your dashboard: {dashboard_url}\n\n"
+                    "Every small step counts. We look forward to "
+                    "seeing what you build.\n\n"
+                    "The Buildora team\n"
+                    "Learn. Build. Become."
+                )
+
+                html_message = render_to_string(
+                    "accounts/emails/welcome.html",
+                    {
+                        "name": name,
+                        "logo_url": logo_url,
+                        "dashboard_url": dashboard_url,
+                    },
+                )
+
+                sent = send_mail(
+                    subject="Welcome to Buildora!",
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    html_message=html_message,
+                    fail_silently=False,
+                )
+
+                if not sent:
+                    logger.error("Welcome email could not be sent.")
+
+            except Exception:
+                # Email failure must not prevent account creation.
+                # Keep personal details and credentials out of logs.
+                logger.error("Welcome email could not be sent.")
+
+        transaction.on_commit(send_welcome_email)
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
