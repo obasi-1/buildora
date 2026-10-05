@@ -1,6 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { apiFetch } from "./sessionHook.js";
 import PathProjects from "./PathProjects.jsx";
+
+const PythonPlayground = lazy(
+  () => import("./PythonPlayground.jsx")
+);
 
 async function readResponse(response) {
   const data = await response.json();
@@ -27,6 +37,7 @@ function PathLessons({ path, session, onLogin }) {
   const [message, setMessage] = useState("");
   const [expired, setExpired] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [practiceLesson, setPracticeLesson] = useState(null);
 
   const controllerRef = useRef(null);
   const savingRef = useRef(false);
@@ -198,6 +209,21 @@ function PathLessons({ path, session, onLogin }) {
   const progressReady =
     loggedIn && !loading && !error && !expired && Boolean(progress);
 
+    if (practiceLesson) {
+  return (
+    <Suspense fallback={<p role="status">Loading editor…</p>}>
+      <PythonPlayground
+        key={`${session?.user?.id ?? "guest"}-${practiceLesson.id}`}
+        lesson={practiceLesson}
+        userId={session?.user?.id}
+        onBack={() => {
+          setPracticeLesson(null);
+          window.scrollTo(0, 0);
+        }}
+      />
+    </Suspense>
+  );
+}
   return (
     <>
       <section className="exercise-box" aria-label="Your progress">
@@ -331,11 +357,24 @@ function PathLessons({ path, session, onLogin }) {
                   )}
 
                 {lesson.exercise && (
-                  <div className="exercise-box">
-                    <h4>Try it yourself</h4>
-                    <p>{lesson.exercise}</p>
-                  </div>
-                )}
+  <div className="exercise-box">
+    <h4>Try it yourself</h4>
+    <p>{lesson.exercise}</p>
+
+    {path.slug === "python-foundation" && (
+      <button
+        type="button"
+        className="primary-link"
+        onClick={() => {
+          setPracticeLesson(lesson);
+          window.scrollTo(0, 0);
+        }}
+      >
+        Open Python editor →
+      </button>
+    )}
+  </div>
+)}
 
                 {progressReady && (
                   <div className="lesson-actions">
