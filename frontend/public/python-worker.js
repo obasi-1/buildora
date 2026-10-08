@@ -3,26 +3,81 @@ const PYODIDE_URL =
 
 const OUTPUT_LIMIT = 20000;
 
-let started = false;
+let pythonPromise = null;
+let busy = false;
+
+function loadPython() {
+  if (!pythonPromise) {
+    pythonPromise = (async () => {
+      const { loadPyodide } = await import(
+        `${PYODIDE_URL}pyodide.mjs`
+      );
+
+      return loadPyodide({
+        indexURL: PYODIDE_URL,
+      });
+    })().catch((error) => {
+      pythonPromise = null;
+      throw error;
+    });
+  }
+
+  return pythonPromise;
+}
+
+function reportError(error) {
+  self.postMessage({
+    type: "error",
+    message: String(
+      error?.message || "Python could not run. Please try again."
+    ).slice(0, OUTPUT_LIMIT),
+  });
+}
 
 self.onmessage = async (event) => {
-  if (event.data?.type !== "run" || started) return;
+  const request = event.data;
 
-  started = true;
+  if (!request || busy) return;
 
-  const { code, stdin = "" } = event.data;
+  // Prepare Python before the learner clicks Run.
+  if (request.type === "init") {
+    busy = true;
 
-  if (typeof code !== "string" || typeof stdin !== "string") {
-    self.postMessage({
-      type: "error",
-      message: "The code and input must be text.",
-    });
+    try {
+      self.postMessage({
+        type: "status",
+        message: "Preparing Python…",
+      });
+
+      await loadPython();
+
+      self.postMessage({
+        type: "ready",
+      });
+    } catch (error) {
+      reportError(error);
+    } finally {
+      busy = false;
+    }
+
     return;
   }
 
+  if (request.type !== "run") return;
+
+  const { code, stdin = "" } = request;
+
+  if (typeof code !== "string" || typeof stdin !== "string") {
+    reportError(new Error("The code and input must be text."));
+    return;
+  }
+
+  busy = true;
+
+  let globals;
+  let result;
   let outputLength = 0;
   let outputLimited = false;
-  let globals;
 
   function sendOutput(text) {
     if (outputLimited) return;
@@ -50,24 +105,21 @@ self.onmessage = async (event) => {
   }
 
   try {
-    self.postMessage({
-      type: "status",
-      message: "Loading Python…",
+    const pyodide = await loadPython();
+
+    // Set fresh output handlers and input for this run.
+    pyodide.setStdout({
+      batched: (text) => sendOutput(`${text}\n`),
     });
 
-    const { loadPyodide } = await import(
-      `${PYODIDE_URL}pyodide.mjs`
-    );
-
-    const pyodide = await loadPyodide({
-      indexURL: PYODIDE_URL,
-      stdout: (text) => sendOutput(`${text}\n`),
-      stderr: (text) => sendOutput(`${text}\n`),
+    pyodide.setStderr({
+      batched: (text) => sendOutput(`${text}\n`),
     });
 
-    // Supply one line for each call to Python's input().
     const inputLines =
-      stdin === "" ? [] : stdin.replace(/\r\n?/g, "\n").split("\n");
+      stdin === ""
+        ? []
+        : stdin.replace(/\r\n?/g, "\n").split("\n");
 
     let inputIndex = 0;
 
@@ -78,6 +130,7 @@ self.onmessage = async (event) => {
       },
     });
 
+    // Start with fresh script variables for each run.
     globals = pyodide.runPython(
       '{"__name__": "__main__"}'
     );
@@ -86,26 +139,25 @@ self.onmessage = async (event) => {
       type: "running",
     });
 
-    const result = await pyodide.runPythonAsync(code, {
+    result = await pyodide.runPythonAsync(code, {
       globals,
       filename: "main.py",
     });
-
-    if (result && typeof result.destroy === "function") {
-      result.destroy();
-    }
 
     self.postMessage({
       type: "done",
     });
   } catch (error) {
-    self.postMessage({
-      type: "error",
-      message: String(
-        error?.message || "Python could not run. Please try again."
-      ).slice(0, OUTPUT_LIMIT),
-    });
+    reportError(error);
   } finally {
-    globals?.destroy();
+    try {
+      if (result && typeof result.destroy === "function") {
+        result.destroy();
+      }
+
+      globals?.destroy();
+    } finally {
+      busy = false;
+    }
   }
 };
