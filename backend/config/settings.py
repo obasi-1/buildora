@@ -211,3 +211,10 @@ ANYMAIL = {
 }
 
 DEFAULT_FROM_EMAIL = "Buildora <obasonz61@gmail.com>"
+
+CORS_ALLOWED_ORIGINS = [
+    "https://build-or-a.tech",
+    "https://www.build-or-a.tech",
+    "https://your-old-buildora-link.vercel.app", # You can keep this for fallback
+    "http://localhost:5173",
+]
