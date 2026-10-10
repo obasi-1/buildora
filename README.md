@@ -4,7 +4,7 @@
 
 Buildora is a full-stack learning platform that helps students learn coding through guided lessons, practical exercises, and projects.
 
-🌐 **Live website:** https://buildora-rose-two.vercel.app/
+🌐 **Live website:** [www.build-or-a.tech](https://www.build-or-a.tech/)
 
 ## Features
 
@@ -17,6 +17,13 @@ Buildora is a full-stack learning platform that helps students learn coding thro
 - Personal dashboard.
 - GitHub repository links for project submissions.
 - Django admin for managing users and learning content.
+- Password recovery through emailed reset links.
+- Branded welcome emails after registration.
+- Built-in Python editor for practising directly in the browser.
+- Python runtime preloading and reuse for faster repeat runs.
+- Browser-saved code drafts and Python file downloads.
+- Light and dark themes.
+- Shared navigation menu with browser Back and Forward support.
 
 ## Technology Stack
 
@@ -121,9 +128,9 @@ Do not commit `.env` files to Git.
 
 ## Planned Improvements
 
-- Forgot-password and password-reset functionality.
-- Welcome emails after registration.
 - Additional learning paths and projects.
+- Account-based code saving across devices.
+- Expanded coding workspace features.
 
 ## Author
 
