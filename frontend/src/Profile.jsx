@@ -17,7 +17,7 @@ function formFromUser(user) {
   };
 }
 
-export default function Profile({ onBack, onLogin, onSaved }) {
+export default function Profile({ header, onLogin, onSaved }) {
   const [user, setUser] = useState(null);
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -175,20 +175,13 @@ export default function Profile({ onBack, onLogin, onSaved }) {
 
   return (
     <div className="site">
-      <header className="site-header">
-        <span className="brand">
-          Buildora<span>.</span>
-        </span>
-
-        <button
-          type="button"
-          className="back-button"
-          onClick={onBack}
-          disabled={saving}
-        >
-          ← Back
-        </button>
-      </header>
+      <fieldset
+  disabled={saving}
+  aria-label="Page navigation"
+  style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
+>
+  {header}
+</fieldset>
 
       <main className="auth-page profile-page">
         <p className="eyebrow">YOUR ACCOUNT</p>

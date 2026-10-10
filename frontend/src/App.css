@@ -1755,3 +1755,217 @@ html[data-theme="light"] .code-preview-output {
   border-left-color: #6fe0b8;
   color: #e2f3ec;
 }
+
+/* Shared navigation header */
+.buildora-header {
+  --header-surface: #ffffff;
+  --header-text: #172923;
+  --header-muted: #53675d;
+  --header-border: #d5e2da;
+  --header-hover: #edf6f0;
+  --header-accent: #216448;
+
+  position: relative;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--header-border);
+  color: var(--header-text);
+}
+
+[data-theme="dark"] .buildora-header {
+  --header-surface: #142235;
+  --header-text: #edf5f1;
+  --header-muted: #b4c7be;
+  --header-border: #31465a;
+  --header-hover: #20364a;
+  --header-accent: #79e0b6;
+}
+
+.buildora-header-left,
+.buildora-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.buildora-header button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.buildora-back,
+.buildora-theme-button,
+.buildora-menu-button,
+.buildora-logo-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid var(--header-border);
+  border-radius: 12px;
+  background: var(--header-surface);
+  color: var(--header-text);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.buildora-back {
+  gap: 8px;
+  padding-inline: 12px;
+}
+
+.buildora-back span {
+  font-size: 22px;
+}
+
+.buildora-theme-button {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.buildora-logo-button {
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
+
+.buildora-logo-button img {
+  display: block;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.buildora-back:hover,
+.buildora-theme-button:hover,
+.buildora-menu-button:hover,
+.buildora-logo-button:hover {
+  background: var(--header-hover);
+}
+
+.buildora-header button:focus-visible {
+  outline: 3px solid var(--header-accent);
+  outline-offset: 3px;
+}
+
+.buildora-menu-container {
+  position: relative;
+}
+
+.buildora-menu-button[aria-expanded="true"] {
+  background: var(--header-hover);
+  border-color: var(--header-accent);
+}
+
+.buildora-menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: min(280px, calc(100vw - 40px));
+  max-height: min(520px, calc(100dvh - 110px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px;
+  border: 1px solid var(--header-border);
+  border-radius: 16px;
+  background: var(--header-surface);
+  color: var(--header-text);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 18%);
+}
+
+.buildora-menu[hidden] {
+  display: none;
+}
+
+.buildora-menu:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.buildora-menu-greeting {
+  margin: 0 0 6px;
+  padding: 12px;
+  color: var(--header-muted);
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.buildora-menu button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--header-text);
+  text-align: left;
+  line-height: 1.4;
+}
+
+.buildora-menu button:hover {
+  background: var(--header-hover);
+}
+
+.buildora-menu-bottom {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--header-border);
+}
+
+.buildora-menu .buildora-logout {
+  color: #b42318;
+}
+
+[data-theme="dark"] .buildora-menu .buildora-logout {
+  color: #ffaaa3;
+}
+
+.buildora-menu .buildora-menu-signup {
+  background: #216448;
+  color: #ffffff;
+  font-weight: 650;
+}
+
+.buildora-menu .buildora-menu-signup:hover {
+  background: #184d36;
+}
+
+[data-theme="dark"] .buildora-menu .buildora-menu-signup {
+  background: #79e0b6;
+  color: #10291f;
+}
+
+[data-theme="dark"] .buildora-menu .buildora-menu-signup:hover {
+  background: #a0edce;
+}
+
+@media (max-width: 480px) {
+  .buildora-header {
+    gap: 8px;
+    padding: 14px 0;
+  }
+
+  .buildora-header-left,
+  .buildora-header-right {
+    gap: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buildora-header button {
+    transition: none;
+  }
+}

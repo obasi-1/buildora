@@ -7,34 +7,62 @@ import Dashboard from "./Dashboard.jsx";
 import Profile from "./Profile.jsx";
 import useSession from "./sessionHook.js";
 import ResetPassword from "./ResetPassword.jsx";
+import ForgotPassword from "./ForgotPassword.jsx";
+import SiteHeader from "./SiteHeader.jsx";
 
-function readResetLink() {
-  const hash = window.location.hash;
-  const [screen, query = ""] = hash.split("?");
+function readLocation() {
+  return window.location.hash || "#home";
+}
 
-  if (screen !== "#reset-password") {
-    return null;
-  }
-
-  const params = new URLSearchParams(query);
+function parseLocation(hash) {
+  const questionMark = hash.indexOf("?");
 
   return {
-    uid: params.get("uid") || "",
-    token: params.get("token") || "",
+    screen: questionMark === -1 ? hash : hash.slice(0, questionMark),
+    params: new URLSearchParams(
+      questionMark === -1 ? "" : hash.slice(questionMark + 1)
+    ),
   };
+}
+
+function safeDestination(value) {
+  if (typeof value !== "string") return "#dashboard";
+
+  const { screen, params } = parseLocation(value);
+
+  if (
+    [
+      "#home",
+      "#dashboard",
+      "#profile",
+      "#learning-paths",
+      "#how-it-works",
+    ].includes(screen)
+  ) {
+    return screen;
+  }
+
+  if (screen === "#path" && params.get("slug")) {
+    return `#path?${new URLSearchParams({
+      slug: params.get("slug"),
+    })}`;
+  }
+
+  return "#dashboard";
+}
+
+function authLocation(screen, next) {
+  return `#${screen}?${new URLSearchParams({
+    next: safeDestination(next),
+  })}`;
 }
 
 export default function App() {
   const [paths, setPaths] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedSlug, setSelectedSlug] = useState(null);
-  const [authScreen, setAuthScreen] = useState(null);
-  const [showDashboard, setShowDashboard] = useState(
-  () => window.location.hash === "#dashboard"
-);
-  const [showProfile, setShowProfile] = useState(false);
-  const [resetLink, setResetLink] = useState(readResetLink);
+  const [location, setLocation] = useState(readLocation);
+
   const {
     session,
     setSession,
@@ -44,23 +72,27 @@ export default function App() {
     dismissRestore,
     updateUser,
   } = useSession();
+
   const [theme, setTheme] = useState(() => {
-  try {
-    const savedTheme = localStorage.getItem("buildora.theme");
+    try {
+      const savedTheme = localStorage.getItem("buildora.theme");
 
-    if (savedTheme === "light" || savedTheme === "dark") {
-      return savedTheme;
+      if (savedTheme === "light" || savedTheme === "dark") {
+        return savedTheme;
+      }
+    } catch {
+      // Use the device preference if storage is unavailable.
     }
-  } catch {
-    // Use the device preference if storage is unavailable.
-  }
 
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-});
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  });
 
-      useEffect(() => {
+  const { screen, params } = parseLocation(location);
+  const nextDestination = safeDestination(params.get("next"));
+
+  useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
 
@@ -72,26 +104,35 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-  function handleHashChange() {
-    setResetLink(readResetLink());
-
-    if (window.location.hash === "#dashboard") {
-      setSelectedSlug(null);
-      setShowProfile(false);
-      setAuthScreen(null);
-      setShowDashboard(true);
-      window.scrollTo(0, 0);
-    } else {
-      setShowDashboard(false);
+    function syncLocation() {
+      setLocation(readLocation());
     }
-  }
 
-  window.addEventListener("hashchange", handleHashChange);
+    window.addEventListener("popstate", syncLocation);
+    window.addEventListener("hashchange", syncLocation);
 
-  return () => {
-    window.removeEventListener("hashchange", handleHashChange);
-  };
-}, []);
+    return () => {
+      window.removeEventListener("popstate", syncLocation);
+      window.removeEventListener("hashchange", syncLocation);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (restoring || restoreError) return;
+
+    const frame = requestAnimationFrame(() => {
+      if (
+        screen === "#learning-paths" ||
+        screen === "#how-it-works"
+      ) {
+        document.getElementById(screen.slice(1))?.scrollIntoView();
+      } else {
+        window.scrollTo(0, 0);
+      }
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [location, screen, restoring, restoreError]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -133,98 +174,109 @@ export default function App() {
 
     return () => controller.abort();
   }, []);
-  
-  function scrollToTop() {
+
+  function navigate(target, { replace = false } = {}) {
+    if (target === readLocation() && !replace) return;
+
+    const state = {
+      ...window.history.state,
+      buildoraBackAvailable: replace
+        ? window.history.state?.buildoraBackAvailable === true
+        : true,
+    };
+
+    if (replace) {
+      window.history.replaceState(state, "", target);
+    } else {
+      window.history.pushState(state, "", target);
+    }
+
+    // pushState does not trigger hashchange.
+    setLocation(readLocation());
     window.scrollTo(0, 0);
   }
 
-  function clearDashboardLink() {
-  if (window.location.hash === "#dashboard") {
-    window.history.replaceState(
-      null,
-      "",
-      window.location.pathname + window.location.search
-    );
-  }
-}
-
-  function goHome() {
-    clearDashboardLink();
-    setSelectedSlug(null);
-    setShowDashboard(false);
-    setShowProfile(false);
-    setAuthScreen(null);
-    scrollToTop();
+  function goBack() {
+    if (window.history.state?.buildoraBackAvailable === true) {
+      window.history.back();
+    } else {
+      // A direct link may have no previous Buildora screen.
+      navigate("#home", { replace: true });
+    }
   }
 
   function openPath(slug) {
-    clearDashboardLink();
-    setSelectedSlug(slug);
-    setShowDashboard(false);
-    setShowProfile(false);
-    setAuthScreen(null);
-    scrollToTop();
+    navigate(`#path?${new URLSearchParams({ slug })}`);
   }
 
   function openDashboard() {
-    setSelectedSlug(null);
-    setShowProfile(false);
-    setAuthScreen(null);
-    setShowDashboard(true);
-    scrollToTop();
+    navigate("#dashboard");
   }
 
   function openProfile() {
-    clearDashboardLink();
-    setSelectedSlug(null);
-    setShowDashboard(false);
-    setAuthScreen(null);
-    setShowProfile(true);
-    scrollToTop();
+    navigate("#profile");
   }
 
   function requestLogin() {
+    // This callback also handles an expired session.
     setSession(null);
-    setAuthScreen("login");
-    scrollToTop();
+
+    const destination =
+      screen === "#path" ||
+      screen === "#profile" ||
+      screen === "#dashboard"
+        ? location
+        : "#dashboard";
+
+    navigate(authLocation("login", destination));
   }
 
   function requestRegistration() {
-    setAuthScreen("register");
-    scrollToTop();
-  }
-
-  function closeAuth() {
-    setAuthScreen(null);
-    scrollToTop();
+    navigate(authLocation("register", "#dashboard"));
   }
 
   function logout() {
     setSession(null);
-    goHome();
+    navigate("#home", { replace: true });
   }
 
-  if (resetLink) {
+  function completeLogin(newSession, destination) {
+    setSession(newSession);
+    navigate(safeDestination(destination), { replace: true });
+  }
+
+  if (screen === "#reset-password") {
+  function returnToLogin() {
+    setSession(null);
+
+    navigate(authLocation("login", "#dashboard"), {
+      replace: true,
+    });
+  }
+
   return (
     <ResetPassword
-      key={`${resetLink.uid}-${resetLink.token}`}
-      uid={resetLink.uid}
-      token={resetLink.token}
-      onLogin={() => {
-        window.history.replaceState(
-          null,
-          "",
-          window.location.pathname + window.location.search
-        );
-
-        setResetLink(null);
-        setSession(null);
-        setSelectedSlug(null);
-        setShowDashboard(false);
-        setShowProfile(false);
-        setAuthScreen("login");
-        window.scrollTo(0, 0);
-      }}
+      key={`${params.get("uid")}-${params.get("token")}`}
+      uid={params.get("uid") || ""}
+      token={params.get("token") || ""}
+      onLogin={returnToLogin}
+      header={
+        <SiteHeader
+          session={session}
+          theme={theme}
+          onToggleTheme={() =>
+            setTheme((current) =>
+              current === "dark" ? "light" : "dark"
+            )
+          }
+          onNavigate={(target) =>
+            navigate(target, { replace: true })
+          }
+          onBack={returnToLogin}
+          onLogout={logout}
+          showBack
+        />
+      }
     />
   );
 }
@@ -269,130 +321,195 @@ export default function App() {
     );
   }
 
-  if (authScreen === "register") {
+  if (screen === "#register") {
     return (
       <Register
-        onBack={closeAuth}
-        onLogin={() => {
-          setAuthScreen("login");
-          scrollToTop();
-        }}
-      />
+  onLogin={() =>
+    navigate(authLocation("login", nextDestination), {
+      replace: true,
+    })
+  }
+  header={
+    <SiteHeader
+      session={session}
+      theme={theme}
+      onToggleTheme={() =>
+        setTheme((current) =>
+          current === "dark" ? "light" : "dark"
+        )
+      }
+      onNavigate={(target) => navigate(target)}
+      onBack={goBack}
+      onLogout={logout}
+      showBack
+    />
+  }
+/>
     );
   }
 
-  if (authScreen === "login" || (showDashboard && !session)) {
-  return (
-    <Login
-      onBack={showDashboard ? goHome : closeAuth}
-      onSuccess={(newSession) => {
-        setSession(newSession);
-        setAuthScreen(null);
-        scrollToTop();
-      }}
+  if (screen === "#forgot-password") {
+    return (
+      <ForgotPassword
+  onBack={() =>
+    navigate(authLocation("login", nextDestination), {
+      replace: true,
+    })
+  }
+  header={
+    <SiteHeader
+      session={session}
+      theme={theme}
+      onToggleTheme={() =>
+        setTheme((current) =>
+          current === "dark" ? "light" : "dark"
+        )
+      }
+      onNavigate={(target) => navigate(target)}
+      onBack={goBack}
+      onLogout={logout}
+      showBack
     />
-  );
-}
+  }
+/>
+    );
+  }
 
-  if (showProfile && session) {
+  const requiresLogin =
+    screen === "#dashboard" || screen === "#profile";
+
+  if (screen === "#login" || (requiresLogin && !session)) {
+    const destination = requiresLogin
+      ? location
+      : nextDestination;
+
+    return (
+      <Login
+  onSuccess={(newSession) =>
+    completeLogin(newSession, destination)
+  }
+  onRegister={() =>
+    navigate(authLocation("register", destination))
+  }
+  onForgotPassword={() =>
+    navigate(authLocation("forgot-password", destination))
+  }
+  header={
+    <SiteHeader
+      session={session}
+      theme={theme}
+      onToggleTheme={() =>
+        setTheme((current) =>
+          current === "dark" ? "light" : "dark"
+        )
+      }
+      onNavigate={(target) => navigate(target)}
+      onBack={goBack}
+      onLogout={logout}
+      showBack
+    />
+  }
+/>
+    );
+  }
+
+  if (screen === "#profile" && session) {
     return (
       <Profile
-        key={session.user.id}
-        onBack={goHome}
-        onLogin={requestLogin}
-        onSaved={updateUser}
-      />
+  key={session.user.id}
+  onLogin={requestLogin}
+  onSaved={updateUser}
+  header={
+    <SiteHeader
+      session={session}
+      theme={theme}
+      onToggleTheme={() =>
+        setTheme((current) =>
+          current === "dark" ? "light" : "dark"
+        )
+      }
+      onNavigate={(destination) => navigate(destination)}
+      onBack={goBack}
+      onLogout={logout}
+      showBack
+    />
+  }
+/>
     );
   }
 
-  if (selectedSlug) {
+  if (screen === "#path" && params.get("slug")) {
+    const slug = params.get("slug");
+
     return (
       <LearningPath
-        key={selectedSlug}
-        slug={selectedSlug}
-        session={session}
-        onLogin={requestLogin}
-        onBack={goHome}
-      />
+  key={slug}
+  slug={slug}
+  session={session}
+  onLogin={requestLogin}
+  onBack={goBack}
+  header={
+    <SiteHeader
+      session={session}
+      theme={theme}
+      onToggleTheme={() =>
+        setTheme((current) =>
+          current === "dark" ? "light" : "dark"
+        )
+      }
+      onNavigate={(destination) => navigate(destination)}
+      onBack={goBack}
+      onLogout={logout}
+      showBack
+    />
+  }
+/>
     );
   }
 
-  if (showDashboard && session) {
+  if (screen === "#dashboard" && session) {
     return (
       <Dashboard
-        key={`${session.user.id}-${session.accessToken}`}
-        accessToken={session.accessToken}
-        onBack={goHome}
-        onOpenPath={openPath}
-        onLogin={requestLogin}
-      />
+  key={`${session.user.id}-${session.accessToken}`}
+  accessToken={session.accessToken}
+  onExplore={() => navigate("#learning-paths")}
+  onOpenPath={openPath}
+  onLogin={requestLogin}
+  header={
+    <SiteHeader
+      session={session}
+      theme={theme}
+      onToggleTheme={() =>
+        setTheme((current) =>
+          current === "dark" ? "light" : "dark"
+        )
+      }
+      onNavigate={(destination) => navigate(destination)}
+      onBack={goBack}
+      onLogout={logout}
+      showBack
+    />
+  }
+/>
     );
   }
 
-  return (
-    <div className="site homepage">
-      <header className="site-header home-header">
-        <a className="brand" href="/">
-          Buildora<span>.</span>
-        </a>
 
-        <nav className="home-navigation" aria-label="Main navigation">
-          <a className="nav-link" href="#learning-paths">
-            Learning paths
-          </a>
-          <a className="nav-link" href="#how-it-works">
-            How it works
-          </a>
-        </nav>
-
-        <div className="home-account-actions">
-          {session ? (
-            <>
-              <button
-                type="button"
-                className="back-button"
-                onClick={openDashboard}
-              >
-                My dashboard
-              </button>
-
-              <button
-                type="button"
-                className="back-button"
-                onClick={openProfile}
-              >
-                My profile
-              </button>
-
-              <button
-                type="button"
-                className="text-button"
-                onClick={logout}
-              >
-                Log out
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                className="back-button"
-                onClick={requestLogin}
-              >
-                Log in
-              </button>
-
-              <button
-                type="button"
-                className="primary-link header-signup"
-                onClick={requestRegistration}
-              >
-                Create account
-              </button>
-            </>
-          )}
-        </div>
-      </header>
+ return (
+  <div className="site homepage">
+    <SiteHeader
+      session={session}
+      theme={theme}
+      onToggleTheme={() => {
+        setTheme((current) =>
+          current === "dark" ? "light" : "dark"
+        );
+      }}
+      onNavigate={(destination) => navigate(destination)}
+      onBack={goBack}
+      onLogout={logout}
+      showBack={false}
+    />
 
       <main>
         <section className="hero hero-showcase home-hero">

@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function ForgotPassword({ onBack }) {
+export default function ForgotPassword({ onBack, header }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -53,20 +53,13 @@ export default function ForgotPassword({ onBack }) {
 
   return (
     <div className="site">
-      <header className="site-header">
-        <span className="brand">
-          Buildora<span>.</span>
-        </span>
-
-        <button
-          type="button"
-          className="back-button"
-          onClick={onBack}
-          disabled={loading}
-        >
-          ← Back to login
-        </button>
-      </header>
+      <fieldset
+  disabled={loading}
+  aria-label="Page navigation"
+  style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
+>
+  {header}
+</fieldset>
 
       <main className="auth-page">
         <p className="eyebrow">ACCOUNT RECOVERY</p>

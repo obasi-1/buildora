@@ -37,7 +37,96 @@ function PathLessons({ path, session, onLogin }) {
   const [message, setMessage] = useState("");
   const [expired, setExpired] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const [practiceLesson, setPracticeLesson] = useState(null);
+  const [practiceLocation, setPracticeLocation] = useState(
+  () => window.location.hash
+);
+
+useEffect(() => {
+  function syncPracticeLocation() {
+    setPracticeLocation(window.location.hash);
+  }
+
+  window.addEventListener("popstate", syncPracticeLocation);
+  window.addEventListener("hashchange", syncPracticeLocation);
+
+  return () => {
+    window.removeEventListener("popstate", syncPracticeLocation);
+    window.removeEventListener("hashchange", syncPracticeLocation);
+  };
+}, []);
+
+const questionMark = practiceLocation.indexOf("?");
+
+const practiceParams = new URLSearchParams(
+  questionMark === -1
+    ? ""
+    : practiceLocation.slice(questionMark + 1)
+);
+
+const practiceLesson =
+  path.slug === "python-foundation" &&
+  practiceParams.get("slug") === path.slug
+    ? path.modules
+        .flatMap((module) => module.lessons)
+        .find(
+          (lesson) =>
+            String(lesson.id) === practiceParams.get("lesson") &&
+            Boolean(lesson.exercise)
+        ) ?? null
+    : null;
+
+function openPractice(lesson) {
+  const parentHash =
+    `#path?${new URLSearchParams({ slug: path.slug })}`;
+
+  const editorHash =
+    `#path?${new URLSearchParams({
+      slug: path.slug,
+      lesson: String(lesson.id),
+    })}`;
+
+  if (window.location.hash === editorHash) return;
+
+  window.history.pushState(
+    {
+      ...window.history.state,
+      buildoraBackAvailable: true,
+      buildoraPracticeParent: parentHash,
+    },
+    "",
+    editorHash
+  );
+
+  // Notify both App and this component of the new URL.
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo(0, 0);
+}
+
+function closePractice() {
+  const parentHash =
+    `#path?${new URLSearchParams({ slug: path.slug })}`;
+
+  if (
+    window.history.state?.buildoraPracticeParent === parentHash &&
+    window.history.state?.buildoraBackAvailable === true
+  ) {
+    window.history.back();
+    return;
+  }
+
+  // A shared editor link may have no previous lesson page.
+  window.history.replaceState(
+    {
+      ...window.history.state,
+      buildoraPracticeParent: null,
+    },
+    "",
+    parentHash
+  );
+
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo(0, 0);
+}
 
   const controllerRef = useRef(null);
   const savingRef = useRef(false);
@@ -216,10 +305,7 @@ function PathLessons({ path, session, onLogin }) {
         key={`${session?.user?.id ?? "guest"}-${practiceLesson.id}`}
         lesson={practiceLesson}
         userId={session?.user?.id}
-        onBack={() => {
-          setPracticeLesson(null);
-          window.scrollTo(0, 0);
-        }}
+        onBack={closePractice}
       />
     </Suspense>
   );
@@ -363,15 +449,12 @@ function PathLessons({ path, session, onLogin }) {
 
     {path.slug === "python-foundation" && (
       <button
-        type="button"
-        className="primary-link"
-        onClick={() => {
-          setPracticeLesson(lesson);
-          window.scrollTo(0, 0);
-        }}
-      >
-        Open Python editor →
-      </button>
+  type="button"
+  className="primary-link"
+  onClick={() => openPractice(lesson)}
+>
+  Open Python editor →
+</button>
     )}
   </div>
 )}
@@ -418,6 +501,7 @@ export default function LearningPath({
   onBack,
   session,
   onLogin,
+  header,
 }) {
   const [path, setPath] = useState(null);
   const [error, setError] = useState("");
@@ -467,19 +551,7 @@ export default function LearningPath({
 
   return (
     <div className="site">
-      <header className="site-header">
-        <a className="brand" href="/">
-          Buildora<span>.</span>
-        </a>
-
-        <button
-          type="button"
-          className="back-button"
-          onClick={onBack}
-        >
-          ← All learning paths
-        </button>
-      </header>
+      {header}
 
       <main className="learning-detail">
         {!path && !error && (

@@ -4,9 +4,10 @@ import MySubmissions from "./MySubmissions.jsx";
 
 export default function Dashboard({
   accessToken,
-  onBack,
+  onExplore,
   onOpenPath,
   onLogin,
+  header,
 }) {
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -73,24 +74,7 @@ export default function Dashboard({
 
   return (
     <div className="site">
-      <header className="site-header">
-        <button
-          type="button"
-          className="brand brand-button"
-          onClick={onBack}
-          aria-label="Buildora home"
-        >
-          Buildora<span>.</span>
-        </button>
-
-        <button
-          type="button"
-          className="back-button"
-          onClick={onBack}
-        >
-          Explore learning paths
-        </button>
-      </header>
+      {header}
 
       <main className="learning-detail">
         <p className="eyebrow">YOUR LEARNING JOURNEY</p>
@@ -139,7 +123,7 @@ export default function Dashboard({
                 <button
                   type="button"
                   className="primary-link"
-                  onClick={onBack}
+                  onClick={onExplore}
                 >
                   Find a learning path →
                 </button>

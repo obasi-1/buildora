@@ -46,7 +46,7 @@ const fields = [
   },
 ];
 
-export default function Register({ onLogin, onBack }) {
+export default function Register({ onLogin, header }) {
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -164,21 +164,13 @@ export default function Register({ onLogin, onBack }) {
 
   return (
     <div className="site">
-      <header className="site-header">
-        <span className="brand">
-          Buildora<span>.</span>
-        </span>
-
-        <button
-          type="button"
-          className="back-button"
-          onClick={onBack}
-          disabled={busy}
-        >
-          ← Back
-        </button>
-      </header>
-
+      <fieldset
+  disabled={busy}
+  aria-label="Page navigation"
+  style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
+>
+  {header}
+</fieldset>
       <main className="auth-page">
         {created ? (
           <>

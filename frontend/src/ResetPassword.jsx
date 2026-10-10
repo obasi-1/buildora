@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function ResetPassword({ uid, token, onLogin }) {
+export default function ResetPassword({ uid, token, onLogin, header }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -74,20 +74,13 @@ export default function ResetPassword({ uid, token, onLogin }) {
 
   return (
     <div className="site">
-      <header className="site-header">
-        <span className="brand">
-          Buildora<span>.</span>
-        </span>
-
-        <button
-          type="button"
-          className="back-button"
-          onClick={onLogin}
-          disabled={loading}
-        >
-          ← Back to login
-        </button>
-      </header>
+      <fieldset
+  disabled={loading}
+  aria-label="Page navigation"
+  style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
+>
+  {header}
+</fieldset>
 
       <main className="auth-page">
         <p className="eyebrow">ACCOUNT RECOVERY</p>
